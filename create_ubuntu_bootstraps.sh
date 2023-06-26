@@ -27,14 +27,11 @@ export CHROOT_MIRROR="https://ftp.uni-stuttgart.de/ubuntu/"
 # Also don't forget to change the path to the chroots in the build_wine.sh
 # script, if you are going to use it
 export MAINDIR=/opt/chroots
-export CHROOT_X64="${MAINDIR}"/${CHROOT_DISTRO}64_chroot
 export CHROOT_X32="${MAINDIR}"/${CHROOT_DISTRO}32_chroot
 
 prepare_chroot () {
 	if [ "$1" = "32" ]; then
 		CHROOT_PATH="${CHROOT_X32}"
-	else
-		CHROOT_PATH="${CHROOT_X64}"
 	fi
 
 	echo "Unmount chroot directories. Just in case."
@@ -140,19 +137,15 @@ EOF
 
 	chmod +x "${MAINDIR}"/prepare_chroot.sh
 	cp "${MAINDIR}"/prepare_chroot.sh "${CHROOT_X32}"/opt
-	mv "${MAINDIR}"/prepare_chroot.sh "${CHROOT_X64}"/opt
 }
 
 mkdir -p "${MAINDIR}"
 
-debootstrap --arch amd64 $CHROOT_DISTRO "${CHROOT_X64}" $CHROOT_MIRROR
 debootstrap --arch i386 $CHROOT_DISTRO "${CHROOT_X32}" $CHROOT_MIRROR
 
 create_build_scripts
 prepare_chroot 32
-prepare_chroot 64
 
-rm "${CHROOT_X64}"/opt/prepare_chroot.sh
 rm "${CHROOT_X32}"/opt/prepare_chroot.sh
 
 clear
