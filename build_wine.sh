@@ -119,13 +119,8 @@ if [ "$USE_CCACHE" = "true" ]; then
 fi
 
 build_with_bwrap () {
-	if [ "${1}" = "32" ]; then
-		BOOTSTRAP_PATH="${BOOTSTRAP_X32}"
-	fi
 
-	if [ "${1}" = "32" ]; then
-		shift
-	fi
+	BOOTSTRAP_PATH="${BOOTSTRAP_X32}"
 
     bwrap --ro-bind "${BOOTSTRAP_PATH}" / --dev /dev --ro-bind /sys /sys \
 		  --proc /proc --tmpfs /tmp --tmpfs /home --tmpfs /run --tmpfs /var \
@@ -312,7 +307,7 @@ if ! command -v bwrap 1>/dev/null; then
 	exit 1
 fi
 
-if [ ! -d "${BOOTSTRAP_X64}" ] || [ ! -d "${BOOTSTRAP_X32}" ]; then
+if [ ! -d "${BOOTSTRAP_X32}" ]; then
 	clear
 	echo "Bootstraps are required for compilation!"
 	exit 1
