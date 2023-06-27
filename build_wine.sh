@@ -266,7 +266,7 @@ else
 
 		cd wine || exit 1
 		if [ -n "${STAGING_ARGS}" ]; then
-			"${staging_patcher[@]}" ${STAGING_ARGS}
+			"${staging_patcher[@]}" "${STAGING_ARGS}"
 		else
 			"${staging_patcher[@]}" --all
 		fi
@@ -324,7 +324,7 @@ export CROSSCXXFLAGS="${CROSSCFLAGS_X32}"
 
 mkdir "${BUILD_DIR}"/build32-tools
 cd "${BUILD_DIR}"/build32-tools || exit
-PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig ${BWRAP32} "${BUILD_DIR}"/wine/configure ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-x86
+PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig ${BWRAP32} "${BUILD_DIR}"/wine/configure "${WINE_BUILD_OPTIONS}" --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-x86
 ${BWRAP32} make -j$(nproc)
 ${BWRAP32} make install
 
@@ -343,7 +343,7 @@ fi
 
 export XZ_OPT="-9"
 
-builds_list="wine-${BUILD_NAME}-x86
+builds_list="wine-${BUILD_NAME}-x86"
 
 for build in ${builds_list}; do
 	if [ -d "${build}" ]; then
