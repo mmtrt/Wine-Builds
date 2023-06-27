@@ -328,6 +328,12 @@ PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig ${B
 ${BWRAP32} make -j$(nproc)
 ${BWRAP32} make install
 
+mkdir "${BUILD_DIR}"/build32
+cd "${BUILD_DIR}"/build32 || exit
+PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig ${BWRAP32} "${BUILD_DIR}"/wine/configure --with-wine-tools="${BUILD_DIR}"/build32-tools ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-${BUILD_NAME}-x86
+${BWRAP32} make -j$(nproc)
+${BWRAP32} make install
+
 echo
 echo "Compilation complete"
 echo "Creating and compressing archives..."
@@ -343,7 +349,13 @@ fi
 
 export XZ_OPT="-9"
 
-builds_list="wine-${BUILD_NAME}-x86"
+if [ "${EXPERIMENTAL_WOW64}" = "true" ]; then
+	mv wine-${BUILD_NAME}-amd64 wine-${BUILD_NAME}-exp-wow64-amd64
+
+	builds_list="wine-${BUILD_NAME}-exp-wow64-amd64"
+else
+	builds_list="wine-${BUILD_NAME}-x86"
+fi
 
 for build in ${builds_list}; do
 	if [ -d "${build}" ]; then
@@ -351,6 +363,11 @@ for build in ${builds_list}; do
 
 		if [ -f wine/wine-tkg-config.txt ]; then
 			cp wine/wine-tkg-config.txt "${build}"
+		fi
+
+		if [ "${EXPERIMENTAL_WOW64}" = "true" ]; then
+			rm "${build}"/bin/wine "${build}"/bin/wine-preloader
+			cp "${build}"/bin/wine64 "${build}"/bin/wine
 		fi
 
 		tar -Jcf "${build}".tar.xz "${build}"
