@@ -85,6 +85,7 @@ export WINE_BUILD_OPTIONS="--without-ldap --without-oss --disable-winemenubuilde
 export BUILD_DIR="${HOME}"/build_wine
 
 # Change these paths to where your Ubuntu bootstraps reside
+export BOOTSTRAP_X64=/opt/chroots/bionic64_chroot
 export BOOTSTRAP_X32=/opt/chroots/bionic32_chroot
 
 export scriptdir="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
@@ -94,11 +95,15 @@ export CXX="g++-9"
 
 export CROSSCC_X32="i686-w64-mingw32-gcc"
 export CROSSCXX_X32="i686-w64-mingw32-g++"
+export CROSSCC_X64="x86_64-w64-mingw32-gcc"
+export CROSSCXX_X64="x86_64-w64-mingw32-g++"
 
 export CFLAGS_X32="-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize"
+export CFLAGS_X64="-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize"
 export LDFLAGS="-Wl,-O1,--sort-common,--as-needed"
 
 export CROSSCFLAGS_X32="${CFLAGS_X32}"
+export CROSSCFLAGS_X64="${CFLAGS_X64}"
 export CROSSLDFLAGS="${LDFLAGS}"
 
 if [ "$USE_CCACHE" = "true" ]; then
@@ -106,9 +111,12 @@ if [ "$USE_CCACHE" = "true" ]; then
 	export CXX="ccache ${CXX}"
 
 	export i386_CC="ccache ${CROSSCC_X32}"
+	export x86_64_CC="ccache ${CROSSCC_X64}"
 
 	export CROSSCC_X32="ccache ${CROSSCC_X32}"
 	export CROSSCXX_X32="ccache ${CROSSCXX_X32}"
+	export CROSSCC_X64="ccache ${CROSSCC_X64}"
+	export CROSSCXX_X64="ccache ${CROSSCXX_X64}"
 
 	if [ -z "${XDG_CACHE_HOME}" ]; then
 		export XDG_CACHE_HOME="${HOME}"/.cache
@@ -119,8 +127,15 @@ if [ "$USE_CCACHE" = "true" ]; then
 fi
 
 build_with_bwrap () {
+	if [ "${1}" = "32" ]; then
+		BOOTSTRAP_PATH="${BOOTSTRAP_X32}"
+	else
+		BOOTSTRAP_PATH="${BOOTSTRAP_X64}"
+	fi
 
-	BOOTSTRAP_PATH="${BOOTSTRAP_X32}"
+	if [ "${1}" = "32" ] || [ "${1}" = "64" ]; then
+		shift
+	fi
 
     bwrap --ro-bind "${BOOTSTRAP_PATH}" / --dev /dev --ro-bind /sys /sys \
 		  --proc /proc --tmpfs /tmp --tmpfs /home --tmpfs /run --tmpfs /var \
@@ -266,7 +281,7 @@ else
 
 		cd wine || exit 1
 		if [ -n "${STAGING_ARGS}" ]; then
-			"${staging_patcher[@]}" "${STAGING_ARGS}"
+			"${staging_patcher[@]}" ${STAGING_ARGS}
 		else
 			"${staging_patcher[@]}" --all
 		fi
@@ -307,13 +322,27 @@ if ! command -v bwrap 1>/dev/null; then
 	exit 1
 fi
 
-if [ ! -d "${BOOTSTRAP_X32}" ]; then
+if [ ! -d "${BOOTSTRAP_X64}" ] || [ ! -d "${BOOTSTRAP_X32}" ]; then
 	clear
 	echo "Bootstraps are required for compilation!"
 	exit 1
 fi
 
+BWRAP64="build_with_bwrap 64"
 BWRAP32="build_with_bwrap 32"
+
+export CROSSCC="${CROSSCC_X64}"
+export CROSSCXX="${CROSSCXX_X64}"
+export CFLAGS="${CFLAGS_X64}"
+export CXXFLAGS="${CFLAGS_X64}"
+export CROSSCFLAGS="${CROSSCFLAGS_X64}"
+export CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
+
+mkdir "${BUILD_DIR}"/build64
+cd "${BUILD_DIR}"/build64 || exit
+${BWRAP64} "${BUILD_DIR}"/wine/configure --enable-win64 ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-amd64
+${BWRAP64} make -j$(nproc)
+${BWRAP64} make install
 
 export CROSSCC="${CROSSCC_X32}"
 export CROSSCXX="${CROSSCXX_X32}"
@@ -324,13 +353,18 @@ export CROSSCXXFLAGS="${CROSSCFLAGS_X32}"
 
 mkdir "${BUILD_DIR}"/build32-tools
 cd "${BUILD_DIR}"/build32-tools || exit
-PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig ${BWRAP32} "${BUILD_DIR}"/wine/configure "${WINE_BUILD_OPTIONS}" --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-x86
+PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig ${BWRAP32} "${BUILD_DIR}"/wine/configure ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-x86
 ${BWRAP32} make -j$(nproc)
 ${BWRAP32} make install
 
+export CFLAGS="${CFLAGS_X64}"
+export CXXFLAGS="${CFLAGS_X64}"
+export CROSSCFLAGS="${CROSSCFLAGS_X64}"
+export CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
+
 mkdir "${BUILD_DIR}"/build32
 cd "${BUILD_DIR}"/build32 || exit
-PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig ${BWRAP32} "${BUILD_DIR}"/wine/configure --with-wine-tools="${BUILD_DIR}"/build32-tools ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-${BUILD_NAME}-x86
+PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig ${BWRAP32} "${BUILD_DIR}"/wine/configure --with-wine64="${BUILD_DIR}"/build64 --with-wine-tools="${BUILD_DIR}"/build32-tools ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-${BUILD_NAME}-amd64
 ${BWRAP32} make -j$(nproc)
 ${BWRAP32} make install
 
@@ -354,7 +388,7 @@ if [ "${EXPERIMENTAL_WOW64}" = "true" ]; then
 
 	builds_list="wine-${BUILD_NAME}-exp-wow64-amd64"
 else
-	builds_list="wine-${BUILD_NAME}-x86"
+	builds_list="wine-${BUILD_NAME}-x86 wine-${BUILD_NAME}-amd64"
 fi
 
 for build in ${builds_list}; do
