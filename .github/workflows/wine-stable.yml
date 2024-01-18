@@ -1,6 +1,8 @@
-name: Wine Stable
+name: Wine Stable CI
 
 on:
+  schedule:
+    - cron:  '0 0 1 * *'
   workflow_dispatch:
 
 jobs:
@@ -29,3 +31,13 @@ jobs:
         with:
           name: Wine Stable
           path: ./*.tar.xz
+
+      - name: Build release
+        uses: marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303
+        with:
+          title: wine-builds stable
+          automatic_release_tag: stable
+          prerelease: false
+          draft: false
+          files: ./*.tar.xz
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
