@@ -1,17 +1,19 @@
-name: Wine-32on64-WoW64 CI
+name: Wine-latest CI
 
 on:
+  schedule:
+    - cron:  '0 0 1 * *'
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       - name: Download artifact
         id: download-artifact
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v2
         with:
           workflow: bootstraps.yml
           workflow_conclusion: success
@@ -23,21 +25,19 @@ jobs:
           sudo tar -C /opt -xpf /opt/Bootstraps/bootstraps.tar.xz
           chmod +x build_wine.sh
           export WINE_VERSION="latest"
-          export EXPERIMENTAL_WOW64="true"
           WINE_BRANCH=vanilla ./build_wine.sh
           WINE_BRANCH=staging ./build_wine.sh
-          WINE_BRANCH=staging-tkg ./build_wine.sh
           sha256sum *.tar.xz
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
-          name: Wine-32on64-WoW64
+          name: Wine-latest
           path: ./*.tar.xz
 
       - name: Build release
         uses: marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303
         with:
-          title: wine-builds wow64 (experimental)
-          automatic_release_tag: wow64
+          title: wine-builds latest
+          automatic_release_tag: latest
           prerelease: false
           draft: false
           files: ./*.tar.xz
