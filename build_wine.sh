@@ -78,7 +78,7 @@ export DO_NOT_COMPILE="false"
 # Make sure that ccache is installed before enabling this.
 export USE_CCACHE="false"
 
-export WINE_BUILD_OPTIONS="--without-ldap --without-oss --disable-winemenubuilder --disable-win16 --disable-tests"
+export WINE_BUILD_OPTIONS="--without-ldap --without-oss --disable-winemenubuilder --disable-win16 --disable-tests --enable-archs=i386,x86_64"
 
 # A temporary directory where the Wine source code will be stored.
 # Do not set this variable to an existing non-empty directory!
@@ -386,7 +386,7 @@ if [ "${EXPERIMENTAL_WOW64}" = "true" ]; then
 
 	builds_list="wine-${BUILD_NAME}-exp-wow64-amd64"
 else
-	builds_list="wine-${BUILD_NAME}-x86 wine-${BUILD_NAME}-amd64"
+	builds_list="wine-${BUILD_NAME}-amd64"
 fi
 
 for build in ${builds_list}; do
