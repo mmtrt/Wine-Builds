@@ -174,10 +174,10 @@ fi
 
 # Stable and Development versions have a different source code location
 # Determine if the chosen version is stable or development
-if [ "$(echo "$WINE_VERSION" | cut -c3)" = "0" ]; then
-	WINE_URL_VERSION=$(echo "$WINE_VERSION" | cut -c1).0
+if [ "$(echo "$WINE_VERSION" | cut -c4)" = "0" ]; then
+	WINE_URL_VERSION=$(echo "$WINE_VERSION" | cut -d'.' -f1).0
 else
-	WINE_URL_VERSION=$(echo "$WINE_VERSION" | cut -c1).x
+	WINE_URL_VERSION=$(echo "$WINE_VERSION" | cut -d'.' -f1).x
 fi
 
 rm -rf "${BUILD_DIR}"
