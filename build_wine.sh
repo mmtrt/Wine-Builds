@@ -239,7 +239,7 @@ else
 	else
 		BUILD_NAME="${WINE_VERSION}"
 
-		wget -q --show-progress "https://dl.winehq.org/wine/source/${WINE_URL_VERSION}/wine-${WINE_VERSION}.tar.xz"
+		wget --show-progress "https://dl.winehq.org/wine/source/${WINE_URL_VERSION}/wine-${WINE_VERSION}.tar.xz"
 
 		tar xf "wine-${WINE_VERSION}.tar.xz"
 		mv "wine-${WINE_VERSION}" wine
@@ -259,7 +259,7 @@ else
 
 			BUILD_NAME="${WINE_VERSION}"-staging
 
-			wget -q --show-progress "https://github.com/wine-staging/wine-staging/archive/v${WINE_VERSION}.tar.gz"
+			wget --show-progress "https://github.com/wine-staging/wine-staging/archive/v${WINE_VERSION}.tar.gz"
 			tar xf v"${WINE_VERSION}".tar.gz
 
 			if [ ! -f v"${WINE_VERSION}".tar.gz ]; then
