@@ -66,18 +66,18 @@ prepare_chroot () {
 }
 
 create_build_scripts () {
-	sdl2_version="2.26.4"
-	faudio_version="23.03"
-	vulkan_headers_version="1.4.328"
-	vulkan_loader_version="1.4.328"
-	spirv_headers_version="sdk-1.3.239.0"
- 	libpcap_version="1.10.4"
-  	libxkbcommon_version="1.6.0"
-   	python3_version="3.12.4"
-    meson_version="1.3.2"
-    cmake_version="3.30.3"
-    ccache_version="4.12.1"
-    libglvnd_version="1.7.0"
+	sdl2_version="2.32.10"
+	faudio_version="25.10"
+	vulkan_headers_version="1.4.329"
+	vulkan_loader_version="1.4.329"
+	spirv_headers_version="sdk-1.4.329.0"
+	libpcap_version="1.10.5"
+	libxkbcommon_version="1.12.0"
+	python3_version="3.12.12"
+	meson_version="1.8.5"
+	cmake_version="4.1.2"
+	ccache_version="4.12.1"
+	libglvnd_version="1.7.0"
 	bison_version="3.8.2"
 
 	cat <<EOF > "${MAINDIR}"/prepare_chroot.sh
