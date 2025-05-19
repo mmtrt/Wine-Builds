@@ -30,3 +30,13 @@ jobs:
         with:
           name: Wine Fsync
           path: ./*.tar.xz
+
+      - name: Build release
+        uses: marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303
+        with:
+          title: wine-builds wow64 (experimental)
+          automatic_release_tag: wow64
+          prerelease: false
+          draft: false
+          files: ./*.tar.xz
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
