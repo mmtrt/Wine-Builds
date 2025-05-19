@@ -1,8 +1,8 @@
 ## Download
 
-The builds can be downloaded either from [**the releases page**](https://github.com/Kron4ek/Wine-Builds/releases).
+The builds can be downloaded either from [**the releases page**](https://github.com/mmtrt/Wine-Builds/releases).
 
-They are also available on [the Actions page](https://github.com/Kron4ek/Wine-Builds/actions), you need to be logged into your GitHub account to be able to download from there.
+They are also available on [the Actions page](https://github.com/mmtrt/Wine-Builds/actions), you need to be logged into your GitHub account to be able to download from there.
 
 ---
 
@@ -23,8 +23,6 @@ The easiest way to install (almost) all required libraries is to install Wine fr
 More precisely, not all the Wine dependencies are strictly required, some of them are optional and needed only for some Windows applications or only for some functions. Still, it's better to keep them all (or at least most of them) installed.
 
 Also, do note that **glibc (libc6)** **2.27** or newer is required.
-
-If you want to use Wine, but don't want to install any of its dependencies, take a look at my [**Conty project**](https://github.com/Kron4ek/Conty). Conty is a container that includes, among other things, Wine and all of its dependencies (including 32-bit ones), you can use it to run any games and programs.
 
 ---
 
