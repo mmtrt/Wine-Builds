@@ -398,6 +398,9 @@ for build in ${builds_list}; do
 	   		fi
 		fi
 
+		i686-w64-mingw32-strip --strip-unneeded "${build}"/lib/wine/i386-windows/*.dll
+		x86_64-w64-mingw32-strip --strip-unneeded "${build}"/lib/wine/x86_64-windows/*.dll
+
 		tar -Jcf "${build}".tar.xz "${build}"
 		mv "${build}".tar.xz "${result_dir}"
 	fi
