@@ -78,7 +78,7 @@ export DO_NOT_COMPILE="false"
 # Make sure that ccache is installed before enabling this.
 export USE_CCACHE="false"
 
-export WINE_BUILD_OPTIONS="--without-ldap --without-oss --disable-winemenubuilder --disable-win16 --disable-tests"
+export WINE_BUILD_OPTIONS="--without-ldap --without-oss --disable-winemenubuilder --disable-win16 --disable-tests --enable-archs=x86_64,i386"
 
 # A temporary directory where the Wine source code will be stored.
 # Do not set this variable to an existing non-empty directory!
@@ -338,30 +338,8 @@ export CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
 
 mkdir "${BUILD_DIR}"/build64
 cd "${BUILD_DIR}"/build64 || exit
-${BWRAP64} "${BUILD_DIR}"/wine/configure --enable-win64 ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-amd64
+${BWRAP64} "${BUILD_DIR}"/wine/configure ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-amd64
 ${BWRAP64} make -j$(nproc) install
-
-export CROSSCC="${CROSSCC_X32}"
-export CROSSCXX="${CROSSCXX_X32}"
-export CFLAGS="${CFLAGS_X32}"
-export CXXFLAGS="${CFLAGS_X32}"
-export CROSSCFLAGS="${CROSSCFLAGS_X32}"
-export CROSSCXXFLAGS="${CROSSCFLAGS_X32}"
-
-mkdir "${BUILD_DIR}"/build32-tools
-cd "${BUILD_DIR}"/build32-tools || exit
-PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig ${BWRAP32} "${BUILD_DIR}"/wine/configure ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-x86
-${BWRAP32} make -j$(nproc) install
-
-export CFLAGS="${CFLAGS_X64}"
-export CXXFLAGS="${CFLAGS_X64}"
-export CROSSCFLAGS="${CROSSCFLAGS_X64}"
-export CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
-
-mkdir "${BUILD_DIR}"/build32
-cd "${BUILD_DIR}"/build32 || exit
-PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/i386-linux-gnu/pkgconfig ${BWRAP32} "${BUILD_DIR}"/wine/configure --with-wine64="${BUILD_DIR}"/build64 --with-wine-tools="${BUILD_DIR}"/build32-tools ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-${BUILD_NAME}-amd64
-${BWRAP32} make -j$(nproc) install
 
 echo
 echo "Compilation complete"
@@ -378,25 +356,13 @@ fi
 
 export XZ_OPT="-9"
 
-if [ "${EXPERIMENTAL_WOW64}" = "true" ]; then
-	builds_list="wine-${BUILD_NAME}-amd64"
-else
-	builds_list="wine-${BUILD_NAME}-x86 wine-${BUILD_NAME}-amd64"
-fi
+
+builds_list="wine-${BUILD_NAME}-amd64"
 
 for build in ${builds_list}; do
 	if [ -d "${build}" ]; then
 		if [ -f wine/wine-tkg-config.txt ]; then
 			cp wine/wine-tkg-config.txt "${build}"
-		fi
-
-		if [ "${EXPERIMENTAL_WOW64}" = "true" ]; then
-  			if [ -f "${build}"/bin/wine64 ]; then
-				rm "${build}"/bin/wine "${build}"/bin/wine-preloader
-				cp "${build}"/bin/wine64 "${build}"/bin/wine
-    			else
-       				rm "${build}"/lib/wine/i386-unix/wine "${build}"/lib/wine/i386-unix/wine-preloader
-	   		fi
 		fi
 
 		i686-w64-mingw32-strip --strip-unneeded "${build}"/lib/wine/i386-windows/*.dll
