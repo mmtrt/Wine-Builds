@@ -21,12 +21,23 @@ jobs:
       - name: Build Proton
         run: |
           sudo apt update
-          sudo apt install debootstrap perl git wget xz-utils bubblewrap autoconf
+          sudo apt install binutils-mingw-w64-i686 binutils-mingw-w64-x86-64 debootstrap perl git wget xz-utils bubblewrap autoconf
           sudo tar -C /opt -xpf /opt/Bootstraps/bootstraps.tar.xz
           chmod +x build_wine.sh
           WINE_BRANCH=proton ./build_wine.sh
           sha256sum *.tar.xz
+          echo "P_VER=$(git ls-remote -t https://github.com/ValveSoftware/wine | grep proton-wine-10 | tail -1 | cut -d'-' -f3,4)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v4
         with:
           name: Proton
           path: ./*.tar.xz
+
+      - name: Build release
+        uses: marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303
+        with:
+          title: Wine Proton ${{ env.P_VER }}
+          automatic_release_tag: ${{ env.P_VER }}
+          prerelease: false
+          draft: false
+          files: ./*.tar.xz
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
