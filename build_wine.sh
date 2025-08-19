@@ -224,7 +224,7 @@ elif [ "$WINE_BRANCH" = "proton" ]; then
 
  	patch -d wine -Np1 < "${scriptdir}"/proton-opencl.patch
 
-	WINE_VERSION="$(cat wine/VERSION | tail -c +14)-$(git -C wine rev-parse --short HEAD)"
+	WINE_VERSION="$(cat wine/VERSION | tail -c +14)-$(git -C wine rev-parse --short HEAD | cut -c1-7)"
 	if [[ "${PROTON_BRANCH}" == "experimental_"* ]] || [ "${PROTON_BRANCH}" = "bleeding-edge" ]; then
 		BUILD_NAME=proton-exp-"${WINE_VERSION}"
 	else
