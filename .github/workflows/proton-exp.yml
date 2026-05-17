@@ -26,7 +26,7 @@ jobs:
           chmod +x build_wine.sh
           WINE_BRANCH=proton PROTON_BRANCH=bleeding-edge ./build_wine.sh
           sha256sum *.tar.xz
-          echo "P_VER=$(git ls-remote -t https://github.com/ValveSoftware/wine | grep bleeding-edge-10 | cut -d'-' -f5 | tail -1)-$(git ls-remote -t https://github.com/ValveSoftware/wine | grep bleeding-edge-10 | tail -1 | cut -c1-7)" >> $GITHUB_ENV
+          echo "P_VER=$(git ls-remote -t https://github.com/ValveSoftware/wine | grep bleeding-edge-11 | cut -d'-' -f5 | tail -1)-$(git ls-remote -t https://github.com/ValveSoftware/wine | grep bleeding-edge-11 | tail -1 | cut -c1-7)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v4
         with:
           name: Proton Experimental
