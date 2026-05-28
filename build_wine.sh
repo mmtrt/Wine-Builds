@@ -378,6 +378,67 @@ for build in ${builds_list}; do
 	fi
 done
 
+# Download prefixPack.txz
+
+if [ "$WINE_BRANCH" = "proton" ]; then
+
+wget -q "https://github.com/GameNative/bionic-prefix-files/raw/main/prefixPack-x86_64-11.txz" -O $GITHUB_WORKSPACE/prefixPack.txz
+
+fi
+
+if [ "${WINE_BRANCH}" = "vanilla" ] || [ "${WINE_BRANCH}" = "staging" ]; then
+
+wget -q "https://github.com/GameNative/bionic-prefix-files/raw/main/prefixPack-wine-11-x86_64.txz" -O $GITHUB_WORKSPACE/prefixPack.txz
+
+fi
+
+# Generate proton profile.json
+
+cat > $GITHUB_WORKSPACE/profile.json << EOF
+{
+  "type": "Proton",
+  "versionName": "${BUILD_NAME}-${ARCH_NAME}",
+  "versionCode": 2,
+  "description": "Proton ${BUILD_NAME} ${ARCH_NAME} - Windows compatibility layer with improved gaming support",
+  "files": [],
+  "wine": {
+    "binPath": "bin",
+    "libPath": "lib",
+    "prefixPack": "prefixPack.txz"
+  }
+}
+EOF
+
+# Generate wine profile.json for Ludashi
+
+cat > $GITHUB_WORKSPACE/profile-wine.json << EOF
+{
+  "type": "wine",
+  "versionName": "${BUILD_NAME}-${ARCH_NAME}",
+  "versionCode": 0,
+  "description": "wine ${BUILD_NAME} ${ARCH_NAME} - Windows compatibility layer with improved gaming support",
+  "files": [],
+  "wine": {
+    "binPath": "bin",
+    "libPath": "lib",
+    "prefixPack": "prefixPack.txz"
+  }
+}
+EOF
+
+ls -al
+
+# Create proton WCP - txz format
+cp $GITHUB_WORKSPACE/prefixPack.txz .
+cp $GITHUB_WORKSPACE/profile.json .
+tar cJf "${BUILD_NAME}-${ARCH_NAME}".wcp bin lib share prefixPack.txz profile.json
+mv "${BUILD_NAME}-${ARCH_NAME}".wcp "${result_dir}"
+
+# Create wine WCP for CMOD & Ludashi - wcp.xz format
+cp $GITHUB_WORKSPACE/profile-wine.json profile.json
+tar cJf "${BUILD_NAME}-${ARCH_NAME}".wcp.xz bin lib share prefixPack.txz profile.json
+mv "${BUILD_NAME}-${ARCH_NAME}".wcp.xz "${result_dir}"
+
 rm -rf "${BUILD_DIR}"
 
 echo

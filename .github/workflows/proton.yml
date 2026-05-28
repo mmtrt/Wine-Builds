@@ -30,7 +30,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Proton
-          path: ./*.tar.xz
+          path: |
+            ./*.tar.xz
+            ./*.wcp*
 
       - name: Build release
         uses: marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303
@@ -39,5 +41,7 @@ jobs:
           automatic_release_tag: ${{ env.P_VER }}
           prerelease: false
           draft: false
-          files: ./*.tar.xz
+          files: |
+            ./*.tar.xz
+            ./*.wcp*
           repo_token: ${{ secrets.GITHUB_TOKEN }}
