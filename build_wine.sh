@@ -397,9 +397,9 @@ fi
 cat > $GITHUB_WORKSPACE/profile.json << EOF
 {
   "type": "Proton",
-  "versionName": "${BUILD_NAME}-${ARCH_NAME}",
+  "versionName": "${builds_list}",
   "versionCode": 2,
-  "description": "Proton ${BUILD_NAME} ${ARCH_NAME} - Windows compatibility layer with improved gaming support",
+  "description": "wine ${builds_list} amd64 - Windows compatibility layer with improved gaming support",
   "files": [],
   "wine": {
     "binPath": "bin",
@@ -414,9 +414,9 @@ EOF
 cat > $GITHUB_WORKSPACE/profile-wine.json << EOF
 {
   "type": "wine",
-  "versionName": "${BUILD_NAME}-${ARCH_NAME}",
+  "versionName": "${builds_list}",
   "versionCode": 0,
-  "description": "wine ${BUILD_NAME} ${ARCH_NAME} - Windows compatibility layer with improved gaming support",
+  "description": "wine ${BUILD_NAME} amd64 - Windows compatibility layer with improved gaming support",
   "files": [],
   "wine": {
     "binPath": "bin",
@@ -428,16 +428,22 @@ EOF
 
 ls -al
 
+cd "${builds_list}"
+
+ls -al
+
 # Create proton WCP - txz format
 cp $GITHUB_WORKSPACE/prefixPack.txz .
 cp $GITHUB_WORKSPACE/profile.json .
-tar cJf "${BUILD_NAME}-${ARCH_NAME}".wcp bin lib share prefixPack.txz profile.json
-mv "${BUILD_NAME}-${ARCH_NAME}".wcp "${result_dir}"
+tar cJf "${builds_list}".wcp bin lib share prefixPack.txz profile.json
+mv "${builds_list}".wcp "${result_dir}"
 
 # Create wine WCP for CMOD & Ludashi - wcp.xz format
 cp $GITHUB_WORKSPACE/profile-wine.json profile.json
-tar cJf "${BUILD_NAME}-${ARCH_NAME}".wcp.xz bin lib share prefixPack.txz profile.json
-mv "${BUILD_NAME}-${ARCH_NAME}".wcp.xz "${result_dir}"
+tar cJf "${builds_list}".wcp.xz bin lib share prefixPack.txz profile.json
+mv "${builds_list}".wcp.xz "${result_dir}"
+
+cd ..
 
 rm -rf "${BUILD_DIR}"
 
