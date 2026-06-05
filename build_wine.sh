@@ -390,10 +390,10 @@ wget -q "https://github.com/GameNative/bionic-prefix-files/raw/main/prefixPack-x
 
 cat > profile.json << EOF
 {
-  "type": "proton",
-  "versionName": "${BUILD_NAME}-x86_64",
+  "type": "Proton",
+  "versionName": "${builds_list}",
   "versionCode": 2,
-  "description": "proton ${BUILD_NAME} x86_64 - Windows compatibility layer with improved gaming support",
+  "description": "${builds_list} amd64 - Windows compatibility layer with improved gaming support",
   "files": [],
   "wine": {
     "binPath": "bin",
@@ -404,8 +404,8 @@ cat > profile.json << EOF
 EOF
 
 # Create proton WCP - txz format
-tar cJf "proton-${BUILD_NAME}-x86_64".wcp bin lib share prefixPack.txz profile.json
-mv "proton-${BUILD_NAME}-x86_64".wcp "${result_dir}"
+tar cJf "${builds_list}-amd64".wcp bin lib share prefixPack.txz profile.json
+mv "${builds_list}-amd64".wcp "${result_dir}"
 
 cd ..
 
@@ -422,9 +422,9 @@ wget -q "https://github.com/GameNative/bionic-prefix-files/raw/main/prefixPack-w
 cat > profile.json << EOF
 {
   "type": "wine",
-  "versionName": "${BUILD_NAME}-x86_64",
+  "versionName": "${builds_list}",
   "versionCode": 0,
-  "description": "wine ${BUILD_NAME} x86_64 - Windows compatibility layer with improved gaming support",
+  "description": "wine ${BUILD_NAME} amd64 - Windows compatibility layer with improved gaming support",
   "files": [],
   "wine": {
     "binPath": "bin",
@@ -435,8 +435,8 @@ cat > profile.json << EOF
 EOF
 
 # Create wine WCP for CMOD & Ludashi - wcp.xz format
-tar cJf "wine-${BUILD_NAME}-x86_64".wcp.xz bin lib share prefixPack.txz profile.json
-mv "wine-${BUILD_NAME}-x86_64".wcp.xz "${result_dir}"
+tar cJf "${builds_list}".wcp.xz bin lib share prefixPack.txz profile.json
+mv "${builds_list}".wcp.xz "${result_dir}"
 
 cd ..
 
