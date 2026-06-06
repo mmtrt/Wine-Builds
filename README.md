@@ -46,11 +46,11 @@ The second way, although works, may break video or audio playblack in some games
 
 ### Compilation parameters
 
-Build flags (amd64): `-march=x86-64 -msse3 -mfpmath=sse -O2 -ftree-vectorize`
+Build flags (amd64): `-march=x86-64 -msse3 -mfpmath=sse -O3`
 
-Build flags (x86): `-march=i686 -msse2 -mfpmath=sse -O2 -ftree-vectorize`
+Build flags (x86): `-march=i686 -msse2 -mfpmath=sse -O3`
 
-Configure options: `--without-ldap --without-oss --disable-winemenubuilder --disable-win16 --disable-tests`
+Configure options: `--without-oss --disable-winemenubuilder --disable-tests`
 
 ---
 
