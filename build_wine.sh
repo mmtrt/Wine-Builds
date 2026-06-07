@@ -373,6 +373,10 @@ for build in ${builds_list}; do
 		find ./"${build}"/lib/wine/ -type f -name '*.a'
 		find ./"${build}"/lib/wine/ -type f -name '*.a' -delete
 
+		# strip files
+		strip ./"${build}"/bin/w*
+		find ./"${build}"/lib/wine/*-unix -type f -name '*' -exec strip {} \;
+
 		tar -Jcf "${build}".tar.xz "${build}"
 		mv "${build}".tar.xz "${result_dir}"
 	fi
