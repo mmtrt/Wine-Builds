@@ -6,38 +6,40 @@ on:
       arch:
         description: 'Architecture(s) to build'
         required: true
-        default: x86_64
+        default: all
         type: choice
         options:
+          - all
           - x86_64
           - aarch64
 
 jobs:
+  matrix:
+    runs-on: ubuntu-22.04
+    outputs:
+      include: ${{ steps.set.outputs.include }}
+    steps:
+      - id: set
+        run: |
+          ALL='[{"arch":"x86_64","runner":"ubuntu-22.04","target_arch":"x86_64","bootstrap_artifact":"Bootstraps","bootstrap_tarball":"bootstraps.tar.xz","mingw_path":"","artifact_name":"Wine","branches":"vanilla staging staging-tkg"},{"arch":"aarch64","runner":"ubuntu-22.04-arm","target_arch":"aarch64","bootstrap_artifact":"Bootstraps-ARM64","bootstrap_tarball":"bootstraps-arm64.tar.xz","mingw_path":"/opt/chroots/bionicarm64_chroot/opt/mingw/aarch64/bin","artifact_name":"Wine-ARM64","branches":"vanilla staging"}]'
+          X64='[{"arch":"x86_64","runner":"ubuntu-22.04","target_arch":"x86_64","bootstrap_artifact":"Bootstraps","bootstrap_tarball":"bootstraps.tar.xz","mingw_path":"","artifact_name":"Wine","branches":"vanilla staging staging-tkg"}]'
+          ARM='[{"arch":"aarch64","runner":"ubuntu-22.04-arm","target_arch":"aarch64","bootstrap_artifact":"Bootstraps-ARM64","bootstrap_tarball":"bootstraps-arm64.tar.xz","mingw_path":"/opt/chroots/bionicarm64_chroot/opt/mingw/aarch64/bin","artifact_name":"Wine-ARM64","branches":"vanilla staging"}]'
+          SELECT="${{ github.event.inputs.arch }}"
+          if [ "$SELECT" = "x86_64" ]; then
+            echo "include=$X64" >> "$GITHUB_OUTPUT"
+          elif [ "$SELECT" = "aarch64" ]; then
+            echo "include=$ARM" >> "$GITHUB_OUTPUT"
+          else
+            echo "include=$ALL" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: matrix
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - arch: x86_64
-            runner: ubuntu-22.04
-            target_arch: x86_64
-            bootstrap_artifact: Bootstraps
-            bootstrap_tarball: bootstraps.tar.xz
-            mingw_path: ""
-            artifact_name: Wine
-            branches: "vanilla staging staging-tkg"
-          - arch: aarch64
-            runner: ubuntu-22.04-arm
-            target_arch: aarch64
-            bootstrap_artifact: Bootstraps-ARM64
-            bootstrap_tarball: bootstraps-arm64.tar.xz
-            mingw_path: /opt/chroots/bionicarm64_chroot/opt/mingw/aarch64/bin
-            artifact_name: Wine-ARM64
-            branches: "vanilla staging"
+        include: ${{ fromJSON(needs.matrix.outputs.include) }}
     runs-on: ${{ matrix.runner }}
-    if: |
-      github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.arch == matrix.arch
 
     steps:
       - uses: actions/checkout@v4
