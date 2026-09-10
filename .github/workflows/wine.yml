@@ -2,33 +2,80 @@ name: Wine CI
 
 on:
   workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Architecture(s) to build'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - x86_64
+          - aarch64
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-22.04
+            target_arch: x86_64
+            bootstrap_artifact: Bootstraps
+            bootstrap_tarball: bootstraps.tar.xz
+            mingw_path: ""
+            artifact_name: Wine
+            branches: "vanilla staging staging-tkg"
+          - arch: aarch64
+            runner: ubuntu-22.04-arm
+            target_arch: aarch64
+            bootstrap_artifact: Bootstraps-ARM64
+            bootstrap_tarball: bootstraps-arm64.tar.xz
+            mingw_path: /opt/chroots/bionicarm64_chroot/opt/mingw/aarch64/bin
+            artifact_name: Wine-ARM64
+            branches: "vanilla staging"
+    runs-on: ${{ matrix.runner }}
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.arch == 'all' ||
+      github.event.inputs.arch == matrix.arch
 
     steps:
       - uses: actions/checkout@v4
-      - name: Download artifact
-        id: download-artifact
+
+      - name: Download bootstrap artifact
         uses: dawidd6/action-download-artifact@v3
         with:
           workflow: bootstraps.yml
           workflow_conclusion: success
+          name: ${{ matrix.bootstrap_artifact }}
           path: /opt
-      - name: Build Wine
+
+      - name: Build Wine (${{ matrix.arch }})
         run: |
           sudo apt update
-          sudo apt install debootstrap perl git wget xz-utils bubblewrap autoconf
-          sudo tar -C /opt -xpf /opt/Bootstraps/bootstraps.tar.xz
+          sudo apt install -y \
+            binutils-mingw-w64-i686 \
+            binutils-mingw-w64-x86-64 \
+            debootstrap perl git wget xz-utils bubblewrap autoconf
+          sudo tar -C /opt -xpf "/opt/${{ matrix.bootstrap_artifact }}/${{ matrix.bootstrap_tarball }}" 2>/dev/null \
+            || sudo tar -C /opt -xpf "/opt/${{ matrix.bootstrap_tarball }}"
+          if [ -n "${{ matrix.mingw_path }}" ]; then
+            export PATH="${{ matrix.mingw_path }}:${PATH}"
+          fi
           chmod +x build_wine.sh
-          export WINE_VERSION="$(wget -q -O - "https://raw.githubusercontent.com/Kron4ek/wine-tkg/master/VERSION" | tail -c +14)"
+          export TARGET_ARCH="${{ matrix.target_arch }}"
           export EXPERIMENTAL_WOW64="true"
-          WINE_BRANCH=vanilla ./build_wine.sh
-          WINE_BRANCH=staging ./build_wine.sh
-          WINE_BRANCH=staging-tkg ./build_wine.sh
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+            export WINE_VERSION="$(wget -q -O - "https://raw.githubusercontent.com/Kron4ek/wine-tkg/master/VERSION" | tail -c +14)"
+          fi
+          for branch in ${{ matrix.branches }}; do
+            WINE_BRANCH="$branch" ./build_wine.sh
+          done
           sha256sum *.tar.xz
+
       - uses: actions/upload-artifact@v4
         with:
-          name: Wine
+          name: ${{ matrix.artifact_name }}
           path: ./*.tar.xz

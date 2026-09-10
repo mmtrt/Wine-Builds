@@ -75,6 +75,19 @@ Configure options: `--without-oss --disable-winemenubuilder --disable-tests`
 
 ---
 
+## CI matrix (x86_64 + aarch64)
+
+Workflows use a **matrix** for architecture:
+
+| Workflow | Matrix arches | Manual select |
+|----------|---------------|---------------|
+| `bootstraps.yml` | `x86_64`, `aarch64` | `workflow_dispatch` → arch: all / x86_64 / aarch64 |
+| `wine-latest.yml` | `x86_64`, `aarch64` | same |
+| `wine.yml` | `x86_64`, `aarch64` | same |
+
+- **x86_64**: `ubuntu-22.04`, bootstrap `Bootstraps`, `--enable-archs=x86_64,i386` (WoW64)
+- **aarch64**: `ubuntu-22.04-arm`, bootstrap `Bootstraps-ARM64`, `--enable-archs=aarch64,arm64ec` (WoW64)
+
 ## Compilation / Build environment
 
 I use `create_ubuntu_bootstraps.sh` and `build_wine.sh` to compile my Wine builds, you can use these scripts to compile your own Wine builds. The first script creates Ubuntu bootstraps (32-bit and 64-bit for x86, or arm64) and the second script compiles Wine builds inside the created bootstraps by using `bubblewrap`.

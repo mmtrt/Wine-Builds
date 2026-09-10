@@ -4,24 +4,55 @@ on:
   schedule:
     - cron:  0 0 */5 * *
   workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Architecture(s) to build'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - x86_64
+          - aarch64
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-22.04
+            target_arch: x86_64
+            artifact_name: Bootstraps
+            tarball: bootstraps.tar.xz
+          - arch: aarch64
+            runner: ubuntu-22.04-arm
+            target_arch: aarch64
+            artifact_name: Bootstraps-ARM64
+            tarball: bootstraps-arm64.tar.xz
+    runs-on: ${{ matrix.runner }}
+    # Allow selecting a single arch via workflow_dispatch
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.arch == 'all' ||
+      github.event.inputs.arch == matrix.arch
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create bootstraps
+      - name: Create bootstraps (${{ matrix.arch }})
         run: |
           sudo apt update
-          sudo apt install debootstrap perl
+          sudo apt install -y debootstrap perl
           chmod +x create_ubuntu_bootstraps.sh
-          sudo ./create_ubuntu_bootstraps.sh
+          export TARGET_ARCH="${{ matrix.target_arch }}"
+          sudo -E ./create_ubuntu_bootstraps.sh
           cd /opt
-          sudo tar -I "xz -T0 -9" -cpf bootstraps.tar.xz chroots
-          sha256sum *.tar.xz
+          sudo tar -I "xz -T0 -9" -cpf "${{ matrix.tarball }}" chroots
+          sha256sum "${{ matrix.tarball }}"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: Bootstraps
-          path: /opt/bootstraps.tar.xz
+          name: ${{ matrix.artifact_name }}
+          path: /opt/${{ matrix.tarball }}
