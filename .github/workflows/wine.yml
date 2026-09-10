@@ -6,10 +6,9 @@ on:
       arch:
         description: 'Architecture(s) to build'
         required: true
-        default: all
+        default: x86_64
         type: choice
         options:
-          - all
           - x86_64
           - aarch64
 
