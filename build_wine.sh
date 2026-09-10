@@ -78,7 +78,6 @@ export DO_NOT_COMPILE="false"
 # Make sure that ccache is installed before enabling this.
 export USE_CCACHE="false"
 
-export WINE_BUILD_OPTIONS="--without-oss --disable-winemenubuilder --disable-tests --enable-archs=x86_64,i386"
 
 # A temporary directory where the Wine source code will be stored.
 # Do not set this variable to an existing non-empty directory!
@@ -88,6 +87,10 @@ export BUILD_DIR="${HOME}"/build_wine
 # Change these paths to where your Ubuntu bootstraps reside
 export BOOTSTRAP_X64=/opt/chroots/bionic64_chroot
 export BOOTSTRAP_X32=/opt/chroots/bionic32_chroot
+export BOOTSTRAP_ARM64=/opt/chroots/bionicarm64_chroot
+
+# Set to aarch64 to build arm64 Linux Wine (runs on aarch64 hosts)
+export TARGET_ARCH="${TARGET_ARCH:-x86_64}"
 
 export scriptdir="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
@@ -98,14 +101,42 @@ export CROSSCC_X32="i686-w64-mingw32-gcc"
 export CROSSCXX_X32="i686-w64-mingw32-g++"
 export CROSSCC_X64="x86_64-w64-mingw32-gcc"
 export CROSSCXX_X64="x86_64-w64-mingw32-g++"
+export CROSSCC_AARCH64="aarch64-w64-mingw32-gcc"
+export CROSSCXX_AARCH64="aarch64-w64-mingw32-g++"
 
 export CFLAGS_X32="-march=i686 -msse2 -mfpmath=sse -O3"
 export CFLAGS_X64="-march=x86-64 -msse3 -mfpmath=sse -O3"
+export CFLAGS_AARCH64="-march=armv8-a -O3"
 export LDFLAGS="-Wl,-O1,--sort-common,--as-needed"
 
 export CROSSCFLAGS_X32="${CFLAGS_X32}"
 export CROSSCFLAGS_X64="${CFLAGS_X64}"
+export CROSSCFLAGS_AARCH64="${CFLAGS_AARCH64}"
 export CROSSLDFLAGS="${LDFLAGS}"
+
+if [ "${TARGET_ARCH}" = "aarch64" ]; then
+	export WINE_BUILD_OPTIONS="--without-oss --disable-winemenubuilder --disable-tests --enable-archs=aarch64,arm64ec"
+	export BOOTSTRAP_PATH_MAIN="${BOOTSTRAP_ARM64}"
+	export CROSSCC="${CROSSCC_AARCH64}"
+	export CROSSCXX="${CROSSCXX_AARCH64}"
+	export CFLAGS="${CFLAGS_AARCH64}"
+	export CXXFLAGS="${CFLAGS_AARCH64}"
+	export CROSSCFLAGS="${CROSSCFLAGS_AARCH64}"
+	export CROSSCXXFLAGS="${CROSSCFLAGS_AARCH64}"
+	export BUILD_SUFFIX="aarch64"
+	export MINGW_PATH_EXTRA="/opt/mingw/aarch64/bin"
+else
+	export WINE_BUILD_OPTIONS="--without-oss --disable-winemenubuilder --disable-tests --enable-archs=x86_64,i386"
+	export BOOTSTRAP_PATH_MAIN="${BOOTSTRAP_X64}"
+	export CROSSCC="${CROSSCC_X64}"
+	export CROSSCXX="${CROSSCXX_X64}"
+	export CFLAGS="${CFLAGS_X64}"
+	export CXXFLAGS="${CFLAGS_X64}"
+	export CROSSCFLAGS="${CROSSCFLAGS_X64}"
+	export CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
+	export BUILD_SUFFIX="amd64"
+	export MINGW_PATH_EXTRA="/opt/mingw/x86_64/bin:/opt/mingw/i686/bin"
+fi
 
 if [ "$USE_CCACHE" = "true" ]; then
 	export CC="ccache ${CC}"
@@ -128,7 +159,9 @@ if [ "$USE_CCACHE" = "true" ]; then
 fi
 
 build_with_bwrap () {
-	if [ "${1}" = "32" ]; then
+	if [ "${TARGET_ARCH}" = "aarch64" ]; then
+		BOOTSTRAP_PATH="${BOOTSTRAP_ARM64}"
+	elif [ "${1}" = "32" ]; then
 		BOOTSTRAP_PATH="${BOOTSTRAP_X32}"
 	else
 		BOOTSTRAP_PATH="${BOOTSTRAP_X64}"
@@ -143,7 +176,7 @@ build_with_bwrap () {
 		  --tmpfs /mnt --tmpfs /media --bind "${BUILD_DIR}" "${BUILD_DIR}" \
 		  --bind-try "${XDG_CACHE_HOME}"/ccache "${XDG_CACHE_HOME}"/ccache \
 		  --bind-try "${HOME}"/.ccache "${HOME}"/.ccache \
-		  --setenv PATH "/opt/mingw/x86_64/bin:/opt/mingw/i686/bin:/usr/local/bin:/bin:/sbin:/usr/bin:/usr/sbin" \
+		  --setenv PATH "${MINGW_PATH_EXTRA}:/usr/local/bin:/bin:/sbin:/usr/bin:/usr/sbin" \
 			"$@"
 }
 
@@ -318,25 +351,28 @@ if ! command -v bwrap 1>/dev/null; then
 	exit 1
 fi
 
-if [ ! -d "${BOOTSTRAP_X64}" ] || [ ! -d "${BOOTSTRAP_X32}" ]; then
-	clear
-	echo "Bootstraps are required for compilation!"
-	exit 1
+if [ "${TARGET_ARCH}" = "aarch64" ]; then
+	if [ ! -d "${BOOTSTRAP_ARM64}" ]; then
+		clear
+		echo "Arm64 bootstrap is required for compilation!"
+		exit 1
+	fi
+else
+	if [ ! -d "${BOOTSTRAP_X64}" ] || [ ! -d "${BOOTSTRAP_X32}" ]; then
+		clear
+		echo "Bootstraps are required for compilation!"
+		exit 1
+	fi
 fi
 
 BWRAP64="build_with_bwrap 64"
 BWRAP32="build_with_bwrap 32"
 
-export CROSSCC="${CROSSCC_X64}"
-export CROSSCXX="${CROSSCXX_X64}"
-export CFLAGS="${CFLAGS_X64}"
-export CXXFLAGS="${CFLAGS_X64}"
-export CROSSCFLAGS="${CROSSCFLAGS_X64}"
-export CROSSCXXFLAGS="${CROSSCFLAGS_X64}"
+# CROSSCC / CFLAGS etc already set earlier based on TARGET_ARCH
 
 mkdir "${BUILD_DIR}"/build64
 cd "${BUILD_DIR}"/build64 || exit
-${BWRAP64} "${BUILD_DIR}"/wine/configure ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-amd64
+${BWRAP64} "${BUILD_DIR}"/wine/configure ${WINE_BUILD_OPTIONS} --prefix "${BUILD_DIR}"/wine-"${BUILD_NAME}"-${BUILD_SUFFIX}
 ${BWRAP64} make -j$(nproc) install
 
 echo
@@ -355,7 +391,7 @@ fi
 export XZ_OPT="-9 -T 0"
 
 
-builds_list="wine-${BUILD_NAME}-amd64"
+builds_list="wine-${BUILD_NAME}-${BUILD_SUFFIX}"
 
 for build in ${builds_list}; do
 	if [ -d "${build}" ]; then
@@ -363,8 +399,14 @@ for build in ${builds_list}; do
 			cp wine/wine-tkg-config.txt "${build}"
 		fi
 
-		i686-w64-mingw32-strip --strip-unneeded "${build}"/lib/wine/i386-windows/*.dll
-		x86_64-w64-mingw32-strip --strip-unneeded "${build}"/lib/wine/x86_64-windows/*.dll
+		if [ "${TARGET_ARCH}" = "aarch64" ]; then
+			aarch64-w64-mingw32-strip --strip-unneeded "${build}"/lib/wine/aarch64-windows/*.dll 2>/dev/null || true
+			# arm64ec PE objects (if present)
+			find "${build}"/lib/wine -path '*/arm64ec-windows/*.dll' -exec aarch64-w64-mingw32-strip --strip-unneeded {} \; 2>/dev/null || true
+		else
+			i686-w64-mingw32-strip --strip-unneeded "${build}"/lib/wine/i386-windows/*.dll 2>/dev/null || true
+			x86_64-w64-mingw32-strip --strip-unneeded "${build}"/lib/wine/x86_64-windows/*.dll 2>/dev/null || true
+		fi
 
 		# remove include directory
 		rm -rf "${build}"/include
@@ -374,8 +416,8 @@ for build in ${builds_list}; do
 		find ./"${build}"/lib/wine/ -type f -name '*.a' -delete
 
 		# strip files
-		strip ./"${build}"/bin/w*
-		find ./"${build}"/lib/wine/*-unix -type f -name '*' -exec strip {} \;
+		strip ./"${build}"/bin/w* 2>/dev/null || true
+		find ./"${build}"/lib/wine/*-unix -type f -name '*' -exec strip {} \; 2>/dev/null || true
 
 		tar -Jcf "${build}".tar.xz "${build}"
 		mv "${build}".tar.xz "${result_dir}"

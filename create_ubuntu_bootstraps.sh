@@ -29,6 +29,11 @@ export CHROOT_MIRROR="https://ftp.uni-stuttgart.de/ubuntu/"
 export MAINDIR=/opt/chroots
 export CHROOT_X64="${MAINDIR}"/${CHROOT_DISTRO}64_chroot
 export CHROOT_X32="${MAINDIR}"/${CHROOT_DISTRO}32_chroot
+export CHROOT_ARM64="${MAINDIR}"/${CHROOT_DISTRO}arm64_chroot
+
+# Set TARGET_ARCH=aarch64 to create arm64 bootstrap instead of x86 ones
+# (useful when running on arm64 hosts / GitHub arm runners)
+export TARGET_ARCH="${TARGET_ARCH:-x86_64}"
 
 prepare_chroot () {
 	if [ "$1" = "32" ]; then
@@ -63,6 +68,38 @@ prepare_chroot () {
 	umount "${CHROOT_PATH}"/dev/pts
 	umount "${CHROOT_PATH}"/dev/shm
 	umount "${CHROOT_PATH}"/dev
+}
+
+
+prepare_chroot_arm64 () {
+	CHROOT_PATH="${CHROOT_ARM64}"
+
+	echo "Unmount chroot directories. Just in case."
+	umount -Rl "${CHROOT_PATH}" || true
+
+	echo "Mount directories for chroot"
+	mount --bind "${CHROOT_PATH}" "${CHROOT_PATH}"
+	mount -t proc /proc "${CHROOT_PATH}"/proc
+	mount --bind /sys "${CHROOT_PATH}"/sys
+	mount --make-rslave "${CHROOT_PATH}"/sys
+	mount --bind /dev "${CHROOT_PATH}"/dev
+	mount --bind /dev/pts "${CHROOT_PATH}"/dev/pts
+	mount --bind /dev/shm "${CHROOT_PATH}"/dev/shm
+	mount --make-rslave "${CHROOT_PATH}"/dev
+
+	rm -f "${CHROOT_PATH}"/etc/resolv.conf
+	cp /etc/resolv.conf "${CHROOT_PATH}"/etc/resolv.conf
+
+	echo "Chrooting into ${CHROOT_PATH}"
+	chroot "${CHROOT_PATH}" /usr/bin/env LANG=en_US.UTF-8 TERM=xterm PATH="/bin:/sbin:/usr/bin:/usr/sbin" /opt/prepare_chroot.sh
+
+	echo "Unmount chroot directories"
+	umount -l "${CHROOT_PATH}" || true
+	umount "${CHROOT_PATH}"/proc || true
+	umount "${CHROOT_PATH}"/sys || true
+	umount "${CHROOT_PATH}"/dev/pts || true
+	umount "${CHROOT_PATH}"/dev/shm || true
+	umount "${CHROOT_PATH}"/dev || true
 }
 
 create_build_scripts () {
@@ -255,21 +292,43 @@ cd /opt && rm -r /opt/build_libs
 EOF
 
 	chmod +x "${MAINDIR}"/prepare_chroot.sh
+	# Use the local (possibly modified) mingw-w64-build instead of downloading from Kron4ek
+	cp "${scriptdir:-.}/mingw-w64-build" "${MAINDIR}"/mingw-w64-build 2>/dev/null || cp mingw-w64-build "${MAINDIR}"/mingw-w64-build
+	sed -i 's|wget https://raw.githubusercontent.com/Kron4ek/Wine-Builds/refs/heads/master/mingw-w64-build|cp /opt/mingw-w64-build .|' "${MAINDIR}"/prepare_chroot.sh
 	cp "${MAINDIR}"/prepare_chroot.sh "${CHROOT_X32}"/opt
+	cp "${MAINDIR}"/mingw-w64-build "${CHROOT_X32}"/opt/
 	mv "${MAINDIR}"/prepare_chroot.sh "${CHROOT_X64}"/opt
+	cp "${MAINDIR}"/mingw-w64-build "${CHROOT_X64}"/opt/
 }
 
 mkdir -p "${MAINDIR}"
 
-debootstrap --arch amd64 $CHROOT_DISTRO "${CHROOT_X64}" $CHROOT_MIRROR
-debootstrap --arch i386 $CHROOT_DISTRO "${CHROOT_X32}" $CHROOT_MIRROR
+if [ "${TARGET_ARCH}" = "aarch64" ]; then
+	echo "Creating arm64 (aarch64) Ubuntu bootstrap..."
+	debootstrap --arch arm64 $CHROOT_DISTRO "${CHROOT_ARM64}" $CHROOT_MIRROR
+	create_build_scripts
+	# Use local mingw and only aarch64
+	cp mingw-w64-build "${MAINDIR}"/mingw-w64-build
+	sed -i 's|wget https://raw.githubusercontent.com/Kron4ek/Wine-Builds/refs/heads/master/mingw-w64-build|cp /opt/mingw-w64-build .|' "${MAINDIR}"/prepare_chroot.sh
+	sed -i 's/bash mingw-w64-build x86_64/bash mingw-w64-build aarch64/' "${MAINDIR}"/prepare_chroot.sh
+	sed -i '/bash mingw-w64-build i686/d' "${MAINDIR}"/prepare_chroot.sh
+	# Also fix wine.deb download which is arch specific (optional for arm)
+	sed -i '/wine.deb/d' "${MAINDIR}"/prepare_chroot.sh || true
+	cp "${MAINDIR}"/prepare_chroot.sh "${CHROOT_ARM64}"/opt
+	cp "${MAINDIR}"/mingw-w64-build "${CHROOT_ARM64}"/opt/
+	prepare_chroot_arm64
+	rm -f "${CHROOT_ARM64}"/opt/prepare_chroot.sh "${CHROOT_ARM64}"/opt/mingw-w64-build
+else
+	debootstrap --arch amd64 $CHROOT_DISTRO "${CHROOT_X64}" $CHROOT_MIRROR
+	debootstrap --arch i386 $CHROOT_DISTRO "${CHROOT_X32}" $CHROOT_MIRROR
 
-create_build_scripts
-prepare_chroot 32
-prepare_chroot 64
+	create_build_scripts
+	prepare_chroot 32
+	prepare_chroot 64
 
-rm "${CHROOT_X64}"/opt/prepare_chroot.sh
-rm "${CHROOT_X32}"/opt/prepare_chroot.sh
+	rm "${CHROOT_X64}"/opt/prepare_chroot.sh
+	rm "${CHROOT_X32}"/opt/prepare_chroot.sh
+fi
 
 clear
 echo "Done"

@@ -59,6 +59,7 @@ Configure options: `--without-oss --disable-winemenubuilder --disable-tests`
 * **amd64** - for 64-bit systems, it can run both 32-bit and 64-bit applications.
 * **amd64-wow64** - same as amd64, but does not require 32-bit libraries to run 32-bit applications, therefore it can work on systems without multilib.
 * **x86** - for 32-bit systems, it can run only 32-bit applications.
+* **aarch64** - for 64-bit ARM (arm64) Linux systems. WoW64 by default (`--enable-archs=aarch64,arm64ec`), same idea as PC wine-latest with `EXPERIMENTAL_WOW64=true`.
 
 ---
 
@@ -76,9 +77,25 @@ Configure options: `--without-oss --disable-winemenubuilder --disable-tests`
 
 ## Compilation / Build environment
 
-I use `create_ubuntu_bootstraps.sh` and `build_wine.sh` to compile my Wine builds, you can use these scripts to compile your own Wine builds. The first script creates two Ubuntu bootstraps (32-bit and 64-bit) and the second script compiles Wine builds inside the created bootstraps by using `bubblewrap`.
+I use `create_ubuntu_bootstraps.sh` and `build_wine.sh` to compile my Wine builds, you can use these scripts to compile your own Wine builds. The first script creates Ubuntu bootstraps (32-bit and 64-bit for x86, or arm64) and the second script compiles Wine builds inside the created bootstraps by using `bubblewrap`.
 
 These scripts are a pretty convenient way to compile your own Wine builds if you don't trust my binaries or if you want to apply different patches.
+
+To build **arm64 (aarch64)** Wine:
+
+```
+# On an arm64 host (or GitHub ubuntu-*-arm runner)
+export TARGET_ARCH=aarch64
+sudo -E ./create_ubuntu_bootstraps.sh
+export TARGET_ARCH=aarch64
+./build_wine.sh
+```
+
+The resulting build will be named `wine-<version>-aarch64.tar.xz` (WoW64 by default, like PC `amd64`).
+
+Arm64 uses WoW64 by default (same as PC wine-latest). Configure option (equivalent of x86 `--enable-archs=x86_64,i386`):
+
+    --enable-archs=aarch64,arm64ec
 
 ---
 

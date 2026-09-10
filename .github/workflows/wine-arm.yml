@@ -1,0 +1,39 @@
+name: Wine ARM64 CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04-arm
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: bootstraps-arm.yml
+          workflow_conclusion: success
+          path: /opt
+      - name: Build Wine
+        run: |
+          sudo apt update
+          # Mirror PC workflows: binutils-mingw-w64-i686 binutils-mingw-w64-x86-64
+          # No Ubuntu package for aarch64-w64-mingw32; use bootstrap MinGW on PATH.
+          sudo apt install -y \
+            binutils-mingw-w64-i686 \
+            binutils-mingw-w64-x86-64 \
+            debootstrap perl git wget xz-utils bubblewrap autoconf
+          sudo tar -C /opt -xpf /opt/Bootstraps-ARM64/bootstraps-arm64.tar.xz
+          export PATH="/opt/chroots/bionicarm64_chroot/opt/mingw/aarch64/bin:${PATH}"
+          chmod +x build_wine.sh
+          export TARGET_ARCH=aarch64
+          export EXPERIMENTAL_WOW64="true"
+          WINE_BRANCH=vanilla ./build_wine.sh
+          WINE_BRANCH=staging ./build_wine.sh
+          sha256sum *.tar.xz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wine-ARM64
+          path: ./*.tar.xz

@@ -38,6 +38,7 @@ Archs:
   i586    Windows 32-bit for old CPUs (Intel Pentium (MMX), AMD K5, K6, K6-2, K6-III)
   i686    Windows 32-bit (Intel P6 [Pentium Pro], AMD K7 and newer)
   x86_64  Windows 64-bit
+  aarch64 Windows 64-bit ARM (Windows on Arm)
 
 Options:
   -h, --help                   show help
@@ -162,6 +163,9 @@ build()
     if [ "$arch" = "i586" ] || [ "$arch" = "i686" ]; then
         local x86_dwarf2="--disable-sjlj-exceptions --with-dwarf2"
         local crt_lib="--enable-lib32 --disable-lib64"
+    elif [ "$arch" = "aarch64" ]; then
+        local x86_dwarf2=""
+        local crt_lib="--disable-lib32 --disable-lib64 --enable-libarm64"
     else
         local x86_dwarf2=""
         local crt_lib="--enable-lib64 --disable-lib32"
@@ -360,6 +364,9 @@ while :; do
         x86_64)
             BUILD_X86_64=1
             ;;
+        aarch64)
+            BUILD_AARCH64=1
+            ;;
         --)
             shift
             break
@@ -377,7 +384,7 @@ while :; do
     shift
 done
 
-NUM_BUILDS=$((BUILD_I586 + BUILD_I686 + BUILD_X86_64))
+NUM_BUILDS=$((BUILD_I586 + BUILD_I686 + BUILD_X86_64 + BUILD_AARCH64))
 if [ "$NUM_BUILDS" -eq 0 ]; then
     arg_error "no ARCH was specified"
 fi
@@ -421,10 +428,12 @@ if [ "$PREFIX" ]; then
     I586_PREFIX="$PREFIX"
     I686_PREFIX="$PREFIX"
     X86_64_PREFIX="$PREFIX"
+    AARCH64_PREFIX="$PREFIX"
 else
     I586_PREFIX="$ROOT_PATH/i586"
     I686_PREFIX="$ROOT_PATH/i686"
     X86_64_PREFIX="$ROOT_PATH/x86_64"
+    AARCH64_PREFIX="$ROOT_PATH/aarch64"
 fi
 
 CURRENT_STEP=1
@@ -474,6 +483,11 @@ fi
 if [ "$BUILD_X86_64" ]; then
     build x86_64 "$X86_64_PREFIX"
     ADD_TO_PATH+=("'$X86_64_PREFIX/bin'")
+fi
+
+if [ "$BUILD_AARCH64" ]; then
+    build aarch64 "$AARCH64_PREFIX"
+    ADD_TO_PATH+=("'$AARCH64_PREFIX/bin'")
 fi
 
 if [ ! "$KEEP_ARTIFACTS" ]; then
