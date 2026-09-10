@@ -34,7 +34,6 @@ jobs:
     # Allow selecting a single arch via workflow_dispatch
     if: |
       github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.arch == 'all' ||
       github.event.inputs.arch == matrix.arch
 
     steps:
